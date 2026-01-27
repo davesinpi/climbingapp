@@ -7,10 +7,11 @@ const SettingsView: React.FC = () => {
 
   useEffect(() => {
     const checkApiKey = async () => {
+      // Check both the aistudio helper and the direct process env
       if ((window as any).aistudio?.hasSelectedApiKey) {
         const has = await (window as any).aistudio.hasSelectedApiKey();
         setHasApiKey(has);
-      } else if (process.env.API_KEY) {
+      } else if (process.env.API_KEY && process.env.API_KEY !== '') {
         setHasApiKey(true);
       }
     };
@@ -19,11 +20,15 @@ const SettingsView: React.FC = () => {
 
   const handleSelectApiKey = async () => {
     if ((window as any).aistudio?.openSelectKey) {
-      await (window as any).aistudio.openSelectKey();
-      // After opening the dialog, we assume a key might be selected
-      setHasApiKey(true);
+      try {
+        await (window as any).aistudio.openSelectKey();
+        // Assume success as per platform guidelines and refresh status
+        setHasApiKey(true);
+      } catch (err) {
+        console.error("Key selection failed:", err);
+      }
     } else {
-      alert("API Key selection is only available in supported AI environments.");
+      alert("Manual environment key selection is required in this context. Please ensure your environment has an API_KEY set.");
     }
   };
 
@@ -62,29 +67,37 @@ const SettingsView: React.FC = () => {
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold dark:text-slate-200">API Key Status</p>
-                <p className="text-xs text-slate-500">
-                  {hasApiKey ? "Your environment is configured with an active key." : "No API key detected. Coaching features will be limited."}
-                </p>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold dark:text-slate-200">Current API Status</p>
+                  <p className="text-xs text-slate-500">
+                    {hasApiKey ? "Your environment is correctly linked to a Gemini API key." : "Waiting for manual API key linkage."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`w-3 h-3 rounded-full ${hasApiKey ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-amber-500 shadow-[0_0_10px_#f59e0b]'}`}></span>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${hasApiKey ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {hasApiKey ? "Active" : "Pending Manual Setup"}
+                  </span>
+                </div>
               </div>
-              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${hasApiKey ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
-                {hasApiKey ? "Configured" : "Missing"}
-              </span>
-            </div>
 
-            <button 
-              onClick={handleSelectApiKey}
-              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Select / Update API Key
-            </button>
+              <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Manual Control</p>
+                 <button 
+                  onClick={handleSelectApiKey}
+                  className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-indigo-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Link API Key Manually
+                </button>
+              </div>
+            </div>
             <p className="text-[10px] text-center text-slate-400">
-              Note: Key selection requires a Google Cloud project with billing enabled. Visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="text-indigo-500 underline">Gemini API Documentation</a> for more details.
+              Note: AI Studio environments require selecting a project with billing. Visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-500 underline">Gemini API Billing Docs</a> for more.
             </p>
           </div>
         </section>
@@ -128,7 +141,7 @@ const SettingsView: React.FC = () => {
       </div>
 
       <footer className="text-center pt-8">
-        <p className="text-slate-400 text-[10px] uppercase font-black tracking-[0.2em]">ROAD TO V10 • VERSION 1.2.0</p>
+        <p className="text-slate-400 text-[10px] uppercase font-black tracking-[0.2em]">ROAD TO V10 • VERSION 1.3.0</p>
       </footer>
     </div>
   );
