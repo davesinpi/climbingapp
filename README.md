@@ -1,31 +1,28 @@
-# Road to V10 - Climbing Workout Planner
+# Road to V10 - The Ultimate Climbing Workout Companion
 
-Road to V10 is a production-ready MVP designed for climbers to plan, log, and analyze their training sessions. It combines specialized climbing metrics with AI-powered coaching to help you break through plateaus and reach V10.
+**Road to V10** is a specialized, production-ready web application designed for bouldering and sport climbing enthusiasts. It bridges the gap between raw data logging and intelligent training analysis, helping you systematically progress from your current level to double digits.
 
-## Features
+## 🧗 Core Training Modules
 
-- **Session Logging**: Specialized inputs for Bouldering (Grades/Attempts), Hangboard (Weight/Edge Size/Hang Time), and Strength training.
-- **Workout Templates**: Create reusable structures for your training blocks (Warm-up, Power, Capacity, etc.).
-- **Interactive Calendar**: Plan future sessions and review your historical training volume.
-- **AI Performance Coach**: Powered by Gemini 3, the coach analyzes your recent sessions to suggest focuses for upcoming workouts.
-- **Progress Tracking**: Visualize your training volume and personal records over time.
-- **Local-First**: All data is stored in your browser's local storage for speed and privacy.
+- **Project Tracker**: Log attempts, grades, and send rates for board climbing (Moon, Kilter, Tension) or gym sessions.
+- **Finger Power**: Dedicated hangboard protocols with weight, edge size (mm), and hang-time tracking.
+- **Physical Conditioning**: Strength and prehab logging to build the base needed for high-level climbing.
+- **Custom Templates**: Build your own "Power Endurance" or "Max Strength" sessions once and reuse them forever.
+- **AI Performance Coach**: Leverages Gemini 3 to analyze your volume and intensity, providing actionable tips to avoid injury and optimize gains.
 
-## Tech Stack
+## 🛠 Integration & Setup
 
-- **Frontend**: React 19, Tailwind CSS
-- **Visualization**: Recharts
-- **AI Integration**: @google/genai (Gemini 3 Flash)
-- **State/Storage**: LocalStorage with a centralized StorageService
-- **Icons**: Heroicons (SVG)
+To enable the **AI Performance Coach**, you must link your Gemini API credentials manually:
 
-## Setup
+1. Navigate to the **Settings** tab.
+2. Under the **Manual API Configuration** section, click **"Configure API Key"**.
+3. Use the system dialog to select a Google Cloud project with billing enabled.
 
-To use the AI coaching features, you must configure a Gemini API key:
-1. Go to **Settings**.
-2. Click **Link API Key Manually**.
-3. Choose a project with Gemini API access and billing enabled.
+## 🛡 Privacy & Architecture
 
-## Training Philosophy
+- **Local-First Data**: All your workout logs are stored exclusively in your browser's local storage. Your training data never leaves your device unless sent for AI analysis.
+- **Gemini Intelligence**: Uses the latest Gemini 3 Flash model for low-latency, high-precision coaching feedback.
+- **Responsive Design**: Designed to work perfectly on your phone at the gym or your tablet at home.
 
-The app is built around the "Block Periodization" concept, allowing climbers to segment their sessions into logical blocks of training, ensuring balanced development of strength, power, and technique.
+---
+*Built for climbers who know that consistency is the only way to V10.*
