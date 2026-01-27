@@ -68,6 +68,57 @@ const ExerciseModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (e
   );
 };
 
+const TemplateSelectorModal: React.FC<{ 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSelect: (t: WorkoutTemplate | null) => void;
+  templates: WorkoutTemplate[];
+}> = ({ isOpen, onClose, onSelect, templates }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in zoom-in-95">
+        <h3 className="text-xl font-bold mb-4 dark:text-white text-center">Log Workout</h3>
+        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+          <button 
+            onClick={() => onSelect(null)}
+            className="w-full text-left p-4 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-2xl border border-transparent hover:border-indigo-100 transition-all group"
+          >
+            <p className="font-bold text-indigo-600 dark:text-indigo-400">Blank Session</p>
+            <p className="text-[10px] uppercase text-slate-400 font-bold tracking-tight">Add exercises manually</p>
+          </button>
+          
+          <div className="py-2">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2">From Template</p>
+            {templates.map(t => (
+              <button 
+                key={t.id} 
+                onClick={() => onSelect(t)} 
+                className="w-full text-left p-4 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-2xl dark:text-slate-200 transition-all border border-transparent hover:border-indigo-100 group flex items-center justify-between mb-2"
+              >
+                <div>
+                  <p className="font-bold">{t.name}</p>
+                  <p className="text-[10px] uppercase text-slate-400 font-bold tracking-tighter">{t.blocks.length} Blocks</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-300 group-hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            ))}
+          </div>
+        </div>
+        <button 
+          onClick={onClose} 
+          className="w-full mt-4 py-3 text-slate-400 font-bold hover:text-slate-600 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const TemplatesView: React.FC<{ 
   onStartSession: (t: WorkoutTemplate) => void;
   onStartBlankSession: () => void;
@@ -151,7 +202,11 @@ const TemplatesView: React.FC<{
   );
 };
 
-const CalendarView: React.FC<{ sessions: Session[], onEditSession: (s: Session) => void }> = ({ sessions, onEditSession }) => {
+const CalendarView: React.FC<{ 
+  sessions: Session[], 
+  onEditSession: (s: Session) => void,
+  onAddSession: (date: Date) => void 
+}> = ({ sessions, onEditSession, onAddSession }) => {
   const [selectedDay, setSelectedDay] = useState<number>(new Date().getDate());
   const today = new Date();
   
@@ -166,6 +221,7 @@ const CalendarView: React.FC<{ sessions: Session[], onEditSession: (s: Session) 
   };
 
   const sessionsForSelectedDay = getSessionsForDay(selectedDay);
+  const selectedDateObject = new Date(today.getFullYear(), today.getMonth(), selectedDay);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -209,10 +265,21 @@ const CalendarView: React.FC<{ sessions: Session[], onEditSession: (s: Session) 
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-bold dark:text-slate-100 flex items-center gap-2">
-          Sessions on {today.toLocaleString('default', { month: 'short' })} {selectedDay}
-          <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs font-mono text-slate-500">{sessionsForSelectedDay.length}</span>
-        </h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold dark:text-slate-100 flex items-center gap-2">
+            Sessions on {today.toLocaleString('default', { month: 'short' })} {selectedDay}
+            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs font-mono text-slate-500">{sessionsForSelectedDay.length}</span>
+          </h2>
+          <button 
+            onClick={() => onAddSession(selectedDateObject)}
+            className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Workout
+          </button>
+        </div>
         
         {sessionsForSelectedDay.length > 0 ? (
           sessionsForSelectedDay.map(s => (
@@ -233,6 +300,12 @@ const CalendarView: React.FC<{ sessions: Session[], onEditSession: (s: Session) 
         ) : (
           <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
             <p className="text-slate-400 italic text-sm">No training logged for this day.</p>
+            <button 
+              onClick={() => onAddSession(selectedDateObject)}
+              className="mt-3 text-sm font-bold text-indigo-600 hover:underline"
+            >
+              Log workout for this day
+            </button>
           </div>
         )}
       </div>
@@ -329,10 +402,15 @@ const App: React.FC = () => {
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
   const [allSessions, setAllSessions] = useState<Session[]>([]);
+  const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplate[]>([]);
+  
+  // State for date picking from calendar
+  const [dateForNewSession, setDateForNewSession] = useState<Date | null>(null);
 
   useEffect(() => {
     StorageService.init();
     setExerciseLibrary(StorageService.getExercises());
+    setWorkoutTemplates(StorageService.getTemplates());
     const sessions = StorageService.getSessions();
     setAllSessions(sessions);
     const current = sessions.find(s => !s.isCompleted);
@@ -346,17 +424,17 @@ const App: React.FC = () => {
     setAllSessions(sessions);
   };
 
-  const startSessionFromTemplate = (template: WorkoutTemplate) => {
+  const createSession = (template: WorkoutTemplate | null, date: Date = new Date()) => {
     const newSession: Session = {
       id: Math.random().toString(36).substr(2, 9),
-      templateId: template.id,
-      name: template.name,
-      date: new Date().toISOString(),
-      startTime: new Date().toISOString(),
+      templateId: template?.id,
+      name: template ? template.name : "Quick Session",
+      date: date.toISOString(),
+      startTime: date.toISOString(),
       isCompleted: false,
-      exercises: template.blocks.flatMap(block => 
+      exercises: template ? template.blocks.flatMap(block => 
         block.exercises.map(be => ({ exerciseId: be.exerciseId, sets: [] }))
-      )
+      ) : []
     };
     StorageService.saveSession(newSession);
     setAllSessions(prev => [...prev, newSession]);
@@ -364,23 +442,17 @@ const App: React.FC = () => {
     setActiveView('ActiveSession');
   };
 
+  const startSessionFromTemplate = (template: WorkoutTemplate) => {
+    createSession(template);
+  };
+
   const startBlankSession = () => {
-    const newSession: Session = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: "Quick Session",
-      date: new Date().toISOString(),
-      startTime: new Date().toISOString(),
-      isCompleted: false,
-      exercises: []
-    };
-    StorageService.saveSession(newSession);
-    setAllSessions(prev => [...prev, newSession]);
-    setActiveSession(newSession);
-    setActiveView('ActiveSession');
+    createSession(null);
   };
 
   const handleSaveTemplate = (template: WorkoutTemplate) => {
     StorageService.saveTemplate(template);
+    setWorkoutTemplates(StorageService.getTemplates());
     setEditingTemplate(null);
     setActiveView('Templates');
   };
@@ -407,12 +479,22 @@ const App: React.FC = () => {
 
   const handleEditSession = (s: Session) => {
     if (s.isCompleted) {
-      // Re-opening a completed session for editing
       setActiveSession({ ...s, isCompleted: false });
     } else {
       setActiveSession(s);
     }
     setActiveView('ActiveSession');
+  };
+
+  const handleAddSessionToDate = (date: Date) => {
+    setDateForNewSession(date);
+  };
+
+  const handleSelectTemplateForDate = (template: WorkoutTemplate | null) => {
+    if (dateForNewSession) {
+      createSession(template, dateForNewSession);
+      setDateForNewSession(null);
+    }
   };
 
   return (
@@ -443,6 +525,7 @@ const App: React.FC = () => {
         <CalendarView 
           sessions={allSessions} 
           onEditSession={handleEditSession} 
+          onAddSession={handleAddSessionToDate}
         />
       )}
       {activeView === 'History' && <HistoryView onEditSession={handleEditSession} onDeleteSession={refreshSessions} />}
@@ -482,6 +565,14 @@ const App: React.FC = () => {
           />
         </div>
       )}
+
+      {/* Modal for picking a template when adding to a specific date */}
+      <TemplateSelectorModal 
+        isOpen={dateForNewSession !== null}
+        onClose={() => setDateForNewSession(null)}
+        onSelect={handleSelectTemplateForDate}
+        templates={workoutTemplates}
+      />
     </Layout>
   );
 };
