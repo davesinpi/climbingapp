@@ -338,8 +338,6 @@ const App: React.FC = () => {
     const current = sessions.find(s => !s.isCompleted);
     if (current) {
       setActiveSession(current);
-      // We don't force 'ActiveSession' view anymore on load, 
-      // but users can navigate there via the new tab.
     }
   }, []);
 
@@ -407,9 +405,25 @@ const App: React.FC = () => {
     }
   };
 
+  const handleEditSession = (s: Session) => {
+    if (s.isCompleted) {
+      // Re-opening a completed session for editing
+      setActiveSession({ ...s, isCompleted: false });
+    } else {
+      setActiveSession(s);
+    }
+    setActiveView('ActiveSession');
+  };
+
   return (
     <Layout activeView={activeView} setActiveView={setActiveView} hasActiveSession={activeSession !== null}>
-      {activeView === 'Dashboard' && <Dashboard onEditSession={(s) => { setActiveSession(s); setActiveView('ActiveSession'); }} />}
+      {activeView === 'Dashboard' && (
+        <Dashboard 
+          activeSession={activeSession}
+          onEditSession={handleEditSession} 
+          onCancelActiveSession={handleCancelSession}
+        />
+      )}
       {activeView === 'Templates' && (
         <TemplatesView 
           onStartSession={startSessionFromTemplate} 
@@ -428,10 +442,10 @@ const App: React.FC = () => {
       {activeView === 'Calendar' && (
         <CalendarView 
           sessions={allSessions} 
-          onEditSession={(s) => { setActiveSession(s); setActiveView('ActiveSession'); }} 
+          onEditSession={handleEditSession} 
         />
       )}
-      {activeView === 'History' && <HistoryView onEditSession={(s) => { setActiveSession(s); setActiveView('ActiveSession'); }} onDeleteSession={refreshSessions} />}
+      {activeView === 'History' && <HistoryView onEditSession={handleEditSession} onDeleteSession={refreshSessions} />}
       {activeView === 'ActiveSession' && activeSession && (
         <SessionLogger 
           session={activeSession} 
