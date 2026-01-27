@@ -338,12 +338,14 @@ const App: React.FC = () => {
     const current = sessions.find(s => !s.isCompleted);
     if (current) {
       setActiveSession(current);
-      setActiveView('ActiveSession');
+      // We don't force 'ActiveSession' view anymore on load, 
+      // but users can navigate there via the new tab.
     }
   }, []);
 
   const refreshSessions = () => {
-    setAllSessions(StorageService.getSessions());
+    const sessions = StorageService.getSessions();
+    setAllSessions(sessions);
   };
 
   const startSessionFromTemplate = (template: WorkoutTemplate) => {
@@ -396,18 +398,17 @@ const App: React.FC = () => {
     setActiveView('History');
   };
 
-  if (activeView === 'ActiveSession' && activeSession) {
-    return (
-      <SessionLogger 
-        session={activeSession} 
-        onComplete={handleCompleteSession}
-        onCancel={() => { setActiveSession(null); refreshSessions(); setActiveView('Dashboard'); }}
-      />
-    );
-  }
+  const handleCancelSession = () => {
+    if (activeSession && window.confirm('Discard current workout session?')) {
+      StorageService.deleteSession(activeSession.id);
+      setActiveSession(null);
+      refreshSessions();
+      setActiveView('Dashboard');
+    }
+  };
 
   return (
-    <Layout activeView={activeView} setActiveView={setActiveView}>
+    <Layout activeView={activeView} setActiveView={setActiveView} hasActiveSession={activeSession !== null}>
       {activeView === 'Dashboard' && <Dashboard onEditSession={(s) => { setActiveSession(s); setActiveView('ActiveSession'); }} />}
       {activeView === 'Templates' && (
         <TemplatesView 
@@ -431,6 +432,13 @@ const App: React.FC = () => {
         />
       )}
       {activeView === 'History' && <HistoryView onEditSession={(s) => { setActiveSession(s); setActiveView('ActiveSession'); }} onDeleteSession={refreshSessions} />}
+      {activeView === 'ActiveSession' && activeSession && (
+        <SessionLogger 
+          session={activeSession} 
+          onComplete={handleCompleteSession}
+          onCancel={handleCancelSession}
+        />
+      )}
       {activeView === 'Exercises' && (
         <div className="space-y-6">
           <header className="flex justify-between items-center">

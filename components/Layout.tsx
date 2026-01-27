@@ -6,9 +6,10 @@ interface LayoutProps {
   children: React.ReactNode;
   activeView: AppView;
   setActiveView: (view: AppView) => void;
+  hasActiveSession?: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, hasActiveSession }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
@@ -27,7 +28,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView }) 
     }
   }, [isDarkMode]);
 
-  const navItems: { view: AppView; icon: React.ReactNode; label: string }[] = [
+  const baseNavItems: { view: AppView; icon: React.ReactNode; label: string }[] = [
     { view: 'Dashboard', label: 'Home', icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -50,6 +51,23 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView }) 
     )},
   ];
 
+  const navItems = [...baseNavItems];
+  if (hasActiveSession) {
+    navItems.splice(1, 0, {
+      view: 'ActiveSession',
+      label: 'Active',
+      icon: (
+        <div className="relative">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+        </div>
+      )
+    });
+  }
+
   return (
     <div className="min-h-screen pb-24 lg:pb-0 lg:pl-64 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
       {/* Desktop Sidebar */}
@@ -66,7 +84,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView }) 
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 activeView === item.view 
                   ? 'bg-indigo-600 text-white shadow-indigo-200 dark:shadow-indigo-950/20 shadow-lg' 
-                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  : item.view === 'ActiveSession' 
+                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/10 hover:bg-indigo-100 dark:hover:bg-indigo-900/20'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
             >
               {item.icon}
@@ -107,7 +127,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView }) 
             key={item.view}
             onClick={() => setActiveView(item.view)}
             className={`flex flex-col items-center gap-1 transition-colors ${
-              activeView === item.view ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'
+              activeView === item.view 
+                ? 'text-indigo-600 dark:text-indigo-400' 
+                : item.view === 'ActiveSession'
+                  ? 'text-indigo-600 dark:text-indigo-400'
+                  : 'text-slate-400 dark:text-slate-500'
             }`}
           >
             {item.icon}
@@ -132,7 +156,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView }) 
         </button>
       </nav>
 
-      <main className="max-w-5xl mx-auto p-4 md:p-8">
+      <main className={`max-w-5xl mx-auto p-4 md:p-8 ${activeView === 'ActiveSession' ? 'md:p-0' : ''}`}>
         {children}
       </main>
     </div>
