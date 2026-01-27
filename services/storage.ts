@@ -55,6 +55,10 @@ export const StorageService = {
     else data.push(session);
     localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(data));
   },
+  deleteSession: (id: string) => {
+    const data = StorageService.getSessions().filter(s => s.id !== id);
+    localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(data));
+  },
 
   getSchedule: (): ScheduledWorkout[] => JSON.parse(localStorage.getItem(STORAGE_KEYS.SCHEDULE) || '[]'),
   saveSchedule: (schedule: ScheduledWorkout) => {

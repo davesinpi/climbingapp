@@ -85,19 +85,26 @@ const SessionLogger: React.FC<SessionLoggerProps> = ({ session: initialSession, 
     <div className="flex flex-col h-screen bg-white dark:bg-slate-950 transition-colors">
       {/* Header */}
       <div className="bg-indigo-600 dark:bg-indigo-700 text-white p-4 flex justify-between items-center shadow-md z-20">
-        <div>
-          <h2 className="text-xl font-bold">{session.name}</h2>
-          <p className="text-sm opacity-80">Started at {new Date(session.startTime!).toLocaleTimeString()}</p>
+        <div className="flex items-center gap-3">
+          <button onClick={onCancel} className="p-2 hover:bg-white/10 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <div>
+            <h2 className="text-xl font-bold">{session.name}</h2>
+            <p className="text-sm opacity-80">{initialSession.isCompleted ? 'Editing past session' : `Started at ${new Date(session.startTime!).toLocaleTimeString()}`}</p>
+          </div>
         </div>
         <button 
           onClick={() => {
-            const final = { ...session, isCompleted: true, endTime: new Date().toISOString() };
+            const final = { ...session, isCompleted: true, endTime: session.endTime || new Date().toISOString() };
             StorageService.saveSession(final);
             onComplete();
           }}
           className="bg-white text-indigo-600 dark:text-indigo-700 px-4 py-2 rounded-lg font-bold shadow-sm active:scale-95 transition-transform"
         >
-          Finish
+          {initialSession.isCompleted ? 'Save Changes' : 'Finish Session'}
         </button>
       </div>
 
@@ -148,6 +155,7 @@ const SessionLogger: React.FC<SessionLoggerProps> = ({ session: initialSession, 
                           <div className="flex items-center gap-2">
                              <button onClick={() => updateSet(activeExerciseIndex, sIdx, 'attempts', (set.attempts || 0) + 1)} className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded px-2 text-indigo-600 dark:text-indigo-400 font-bold">+</button>
                              <span className="font-mono dark:text-white">{set.attempts}</span>
+                             <button onClick={() => updateSet(activeExerciseIndex, sIdx, 'attempts', Math.max(0, (set.attempts || 0) - 1))} className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded px-2 text-slate-400 font-bold">-</button>
                           </div>
                         </div>
                         <div>
@@ -155,6 +163,7 @@ const SessionLogger: React.FC<SessionLoggerProps> = ({ session: initialSession, 
                           <div className="flex items-center gap-2">
                              <button onClick={() => updateSet(activeExerciseIndex, sIdx, 'sends', (set.sends || 0) + 1)} className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded px-2 text-green-600 dark:text-green-400 font-bold">+</button>
                              <span className="font-mono dark:text-white">{set.sends}</span>
+                             <button onClick={() => updateSet(activeExerciseIndex, sIdx, 'sends', Math.max(0, (set.sends || 0) - 1))} className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded px-2 text-slate-400 font-bold">-</button>
                           </div>
                         </div>
                       </>

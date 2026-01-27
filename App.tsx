@@ -88,26 +88,52 @@ const CalendarView: React.FC = () => {
   );
 };
 
-const HistoryView: React.FC = () => {
+const HistoryView: React.FC<{ onEditSession: (s: Session) => void; onDeleteSession: (id: string) => void }> = ({ onEditSession, onDeleteSession }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   
   useEffect(() => {
     setSessions(StorageService.getSessions().filter(s => s.isCompleted).reverse());
   }, []);
 
+  const handleDelete = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to remove this session? This cannot be undone.')) {
+      StorageService.deleteSession(id);
+      setSessions(prev => prev.filter(s => s.id !== id));
+      onDeleteSession(id);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold dark:text-white transition-colors">Past Sessions</h1>
       <div className="space-y-4">
         {sessions.map(s => (
-          <div key={s.id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
+          <div key={s.id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors group relative">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-xl font-bold dark:text-slate-100">{s.name}</h3>
                 <p className="text-slate-500 dark:text-slate-400">{new Date(s.date).toLocaleDateString()} • {s.endTime ? 'Completed' : 'Partial'}</p>
               </div>
-              <div className="text-right">
-                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-bold uppercase transition-colors">Success</span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => onEditSession(s)}
+                  className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  title="Edit Session"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button 
+                  onClick={(e) => handleDelete(s.id, e)}
+                  className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  title="Delete Session"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
@@ -169,18 +195,14 @@ const App: React.FC = () => {
     setActiveView('ActiveSession');
   };
 
-  const startBlankSession = () => {
-    const newSession: Session = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: 'Custom Session',
-      date: new Date().toISOString(),
-      startTime: new Date().toISOString(),
-      isCompleted: false,
-      exercises: []
-    };
-    StorageService.saveSession(newSession);
-    setActiveSession(newSession);
+  const handleEditSession = (session: Session) => {
+    setActiveSession(session);
     setActiveView('ActiveSession');
+  };
+
+  const handleDeleteSession = (id: string) => {
+    // Session is already deleted from storage in HistoryView
+    // This hook is for any app-level cleanup needed
   };
 
   if (activeView === 'ActiveSession' && activeSession) {
@@ -189,7 +211,7 @@ const App: React.FC = () => {
         session={activeSession} 
         onComplete={() => {
           setActiveSession(null);
-          setActiveView('Dashboard');
+          setActiveView('History');
         }}
         onCancel={() => {
           setActiveSession(null);
@@ -204,7 +226,7 @@ const App: React.FC = () => {
       {activeView === 'Dashboard' && <Dashboard />}
       {activeView === 'Templates' && <TemplatesView onStartSession={startSessionFromTemplate} />}
       {activeView === 'Calendar' && <CalendarView />}
-      {activeView === 'History' && <HistoryView />}
+      {activeView === 'History' && <HistoryView onEditSession={handleEditSession} onDeleteSession={handleDeleteSession} />}
       {activeView === 'Exercises' && (
         <div className="space-y-6">
           <h1 className="text-3xl font-bold dark:text-white transition-colors">Exercise Library</h1>
