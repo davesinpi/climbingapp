@@ -4,9 +4,9 @@ import { Session } from "../types";
 
 // Helper to get a fresh AI instance with the current API key
 const getAI = () => {
-  const apiKey = window.process?.env?.API_KEY || (globalThis as any).process?.env?.API_KEY;
+  const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("API Key is missing from environment");
+    throw new Error("API Key is missing from environment. Please configure it in Settings.");
   }
   return new GoogleGenAI({ apiKey });
 };
