@@ -151,6 +151,95 @@ const TemplatesView: React.FC<{
   );
 };
 
+const CalendarView: React.FC<{ sessions: Session[], onEditSession: (s: Session) => void }> = ({ sessions, onEditSession }) => {
+  const [selectedDay, setSelectedDay] = useState<number>(new Date().getDate());
+  const today = new Date();
+  
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const getSessionsForDay = (day: number) => {
+    return sessions.filter(s => {
+      const d = new Date(s.date);
+      return d.getDate() === day && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+    });
+  };
+
+  const sessionsForSelectedDay = getSessionsForDay(selectedDay);
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <header>
+        <h1 className="text-3xl font-bold dark:text-white transition-colors">Calendar</h1>
+        <p className="text-slate-500 dark:text-slate-400">{today.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+      </header>
+
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
+        <div className="grid grid-cols-7 gap-2 text-center mb-4">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
+            <div key={d} className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{d}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-2">
+          {days.map(d => {
+            const isToday = d === today.getDate();
+            const isSelected = d === selectedDay;
+            const sessionsCount = getSessionsForDay(d).length;
+            
+            return (
+              <button 
+                key={d} 
+                onClick={() => setSelectedDay(d)}
+                className={`aspect-square border border-slate-100 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center relative transition-all active:scale-95 ${
+                  isSelected 
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none' 
+                    : isToday 
+                      ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400' 
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <span className="text-sm font-bold">{d}</span>
+                {sessionsCount > 0 && (
+                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-indigo-400'}`}></div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold dark:text-slate-100 flex items-center gap-2">
+          Sessions on {today.toLocaleString('default', { month: 'short' })} {selectedDay}
+          <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs font-mono text-slate-500">{sessionsForSelectedDay.length}</span>
+        </h2>
+        
+        {sessionsForSelectedDay.length > 0 ? (
+          sessionsForSelectedDay.map(s => (
+            <div 
+              key={s.id} 
+              onClick={() => onEditSession(s)}
+              className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex justify-between items-center cursor-pointer hover:border-indigo-400 transition-colors group"
+            >
+              <div>
+                <p className="font-bold dark:text-slate-100 group-hover:text-indigo-600 transition-colors">{s.name}</p>
+                <p className="text-xs text-slate-500 uppercase font-bold tracking-tighter">{s.exercises.length} Exercises • {s.exercises.reduce((acc, e) => acc + e.sets.length, 0)} Sets</p>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-300 group-hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+            <p className="text-slate-400 italic text-sm">No training logged for this day.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const HistoryView: React.FC<{ onEditSession: (s: Session) => void; onDeleteSession: (id: string) => void }> = ({ onEditSession, onDeleteSession }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
@@ -239,16 +328,23 @@ const App: React.FC = () => {
   const [editingTemplate, setEditingTemplate] = useState<WorkoutTemplate | null>(null);
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
+  const [allSessions, setAllSessions] = useState<Session[]>([]);
 
   useEffect(() => {
     StorageService.init();
     setExerciseLibrary(StorageService.getExercises());
-    const current = StorageService.getSessions().find(s => !s.isCompleted);
+    const sessions = StorageService.getSessions();
+    setAllSessions(sessions);
+    const current = sessions.find(s => !s.isCompleted);
     if (current) {
       setActiveSession(current);
       setActiveView('ActiveSession');
     }
   }, []);
+
+  const refreshSessions = () => {
+    setAllSessions(StorageService.getSessions());
+  };
 
   const startSessionFromTemplate = (template: WorkoutTemplate) => {
     const newSession: Session = {
@@ -263,6 +359,7 @@ const App: React.FC = () => {
       )
     };
     StorageService.saveSession(newSession);
+    setAllSessions(prev => [...prev, newSession]);
     setActiveSession(newSession);
     setActiveView('ActiveSession');
   };
@@ -277,6 +374,7 @@ const App: React.FC = () => {
       exercises: []
     };
     StorageService.saveSession(newSession);
+    setAllSessions(prev => [...prev, newSession]);
     setActiveSession(newSession);
     setActiveView('ActiveSession');
   };
@@ -292,12 +390,18 @@ const App: React.FC = () => {
     setExerciseLibrary(StorageService.getExercises());
   };
 
+  const handleCompleteSession = () => {
+    setActiveSession(null);
+    refreshSessions();
+    setActiveView('History');
+  };
+
   if (activeView === 'ActiveSession' && activeSession) {
     return (
       <SessionLogger 
         session={activeSession} 
-        onComplete={() => { setActiveSession(null); setActiveView('History'); }}
-        onCancel={() => { setActiveSession(null); setActiveView('Dashboard'); }}
+        onComplete={handleCompleteSession}
+        onCancel={() => { setActiveSession(null); refreshSessions(); setActiveView('Dashboard'); }}
       />
     );
   }
@@ -320,7 +424,13 @@ const App: React.FC = () => {
           onCancel={() => { setEditingTemplate(null); setActiveView('Templates'); }}
         />
       )}
-      {activeView === 'History' && <HistoryView onEditSession={(s) => { setActiveSession(s); setActiveView('ActiveSession'); }} onDeleteSession={() => {}} />}
+      {activeView === 'Calendar' && (
+        <CalendarView 
+          sessions={allSessions} 
+          onEditSession={(s) => { setActiveSession(s); setActiveView('ActiveSession'); }} 
+        />
+      )}
+      {activeView === 'History' && <HistoryView onEditSession={(s) => { setActiveSession(s); setActiveView('ActiveSession'); }} onDeleteSession={refreshSessions} />}
       {activeView === 'Exercises' && (
         <div className="space-y-6">
           <header className="flex justify-between items-center">
