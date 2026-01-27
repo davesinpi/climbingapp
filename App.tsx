@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import SessionLogger from './components/SessionLogger';
 import TemplateEditor from './components/TemplateEditor';
+import SettingsView from './components/SettingsView';
 
 const ExerciseModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (e: Exercise) => void }> = ({ isOpen, onClose, onSave }) => {
   const [name, setName] = useState('');
@@ -667,6 +668,7 @@ const App: React.FC = () => {
           onCancel={handleCancelSession}
         />
       )}
+      {activeView === 'Settings' && <SettingsView />}
       {activeView === 'Exercises' && (
         <div className="space-y-6">
           <header className="flex justify-between items-center">
