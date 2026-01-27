@@ -17,16 +17,6 @@
           }
         }
       };
-
-      // Robust shim for environment variables in the browser
-      const API_KEY = "AIzaSyDUM35eKEZ-hR8CUjWT_e_LttNL5RwV2TU";
-      const processShim = { 
-        env: { API_KEY } 
-      };
-      
-      window.process = processShim;
-      window.global = window;
-      globalThis.process = processShim;
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
