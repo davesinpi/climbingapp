@@ -207,56 +207,113 @@ const CalendarView: React.FC<{
   onEditSession: (s: Session) => void,
   onAddSession: (date: Date) => void 
 }> = ({ sessions, onEditSession, onAddSession }) => {
-  const [selectedDay, setSelectedDay] = useState<number>(new Date().getDate());
   const today = new Date();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState<number>(today.getDate());
   
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // 0 (Sun) to 6 (Sat)
+  
+  const prevMonth = () => {
+    setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
+  };
+  
+  const nextMonth = () => {
+    if (currentYear < 2099 || (currentYear === 2099 && currentMonth < 11)) {
+      setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
+    }
+  };
+
+  const jumpToToday = () => {
+    setCurrentDate(new Date());
+    setSelectedDay(today.getDate());
+  };
 
   const getSessionsForDay = (day: number) => {
     return sessions.filter(s => {
       const d = new Date(s.date);
-      return d.getDate() === day && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+      return d.getDate() === day && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     });
   };
 
   const sessionsForSelectedDay = getSessionsForDay(selectedDay);
-  const selectedDateObject = new Date(today.getFullYear(), today.getMonth(), selectedDay);
+  const selectedDateObject = new Date(currentYear, currentMonth, selectedDay);
+
+  // Years array for jump-to feature
+  const years = Array.from({ length: 2099 - 1980 + 1 }, (_, i) => 1980 + i);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <header>
-        <h1 className="text-3xl font-bold dark:text-white transition-colors">Calendar</h1>
-        <p className="text-slate-500 dark:text-slate-400">{today.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-3xl font-black dark:text-white tracking-tight">
+              {currentDate.toLocaleString('default', { month: 'long' })}
+            </h1>
+            <select 
+              value={currentYear}
+              onChange={(e) => setCurrentDate(new Date(parseInt(e.target.value), currentMonth, 1))}
+              className="bg-transparent text-2xl font-bold text-indigo-600 dark:text-indigo-400 outline-none cursor-pointer border-none p-0 focus:ring-0"
+            >
+              {years.map(y => <option key={y} value={y} className="bg-white dark:bg-slate-900 text-base">{y}</option>)}
+            </select>
+          </div>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Long-term planning & training history</p>
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={jumpToToday}
+            className="px-4 py-2 text-xs font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-slate-200"
+          >
+            Today
+          </button>
+          <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shadow-inner">
+            <button onClick={prevMonth} className="p-2 text-slate-600 dark:text-slate-400 hover:text-indigo-600 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <button onClick={nextMonth} className="p-2 text-slate-600 dark:text-slate-400 hover:text-indigo-600 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </div>
+        </div>
       </header>
 
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
-        <div className="grid grid-cols-7 gap-2 text-center mb-4">
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
-            <div key={d} className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{d}</div>
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="grid grid-cols-7 gap-1 text-center mb-6">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+            <div key={d} className="text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest">{d}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-2">
-          {days.map(d => {
-            const isToday = d === today.getDate();
-            const isSelected = d === selectedDay;
-            const sessionsCount = getSessionsForDay(d).length;
+          {/* Empty cells for first week offset */}
+          {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+            <div key={`empty-${i}`} className="aspect-square opacity-20"></div>
+          ))}
+          
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const dayNum = i + 1;
+            const isToday = dayNum === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+            const isSelected = dayNum === selectedDay;
+            const sessionsCount = getSessionsForDay(dayNum).length;
             
             return (
               <button 
-                key={d} 
-                onClick={() => setSelectedDay(d)}
-                className={`aspect-square border border-slate-100 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center relative transition-all active:scale-95 ${
+                key={dayNum} 
+                onClick={() => setSelectedDay(dayNum)}
+                className={`aspect-square relative flex flex-col items-center justify-center rounded-2xl transition-all active:scale-95 group ${
                   isSelected 
-                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none' 
+                    ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 dark:shadow-none' 
                     : isToday 
-                      ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400' 
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                      ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800' 
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'
                 }`}
               >
-                <span className="text-sm font-bold">{d}</span>
+                <span className={`text-sm font-bold ${isSelected ? 'scale-110' : ''}`}>{dayNum}</span>
                 {sessionsCount > 0 && (
-                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-indigo-400'}`}></div>
+                  <div className={`absolute bottom-2 w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-emerald-400 animate-pulse'}`}></div>
                 )}
               </button>
             );
@@ -264,47 +321,63 @@ const CalendarView: React.FC<{
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold dark:text-slate-100 flex items-center gap-2">
-            Sessions on {today.toLocaleString('default', { month: 'short' })} {selectedDay}
-            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs font-mono text-slate-500">{sessionsForSelectedDay.length}</span>
+      <div className="space-y-4 pt-4">
+        <div className="flex justify-between items-center px-2">
+          <h2 className="text-xl font-extrabold dark:text-slate-100 tracking-tight">
+            {currentDate.toLocaleString('default', { month: 'short' })} {selectedDay}, {currentYear}
           </h2>
           <button 
             onClick={() => onAddSession(selectedDateObject)}
-            className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100 dark:shadow-none text-xs hover:bg-indigo-700 active:scale-95 transition-all"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Workout
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
+            Add Session
           </button>
         </div>
         
         {sessionsForSelectedDay.length > 0 ? (
-          sessionsForSelectedDay.map(s => (
-            <div 
-              key={s.id} 
-              onClick={() => onEditSession(s)}
-              className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex justify-between items-center cursor-pointer hover:border-indigo-400 transition-colors group"
-            >
-              <div>
-                <p className="font-bold dark:text-slate-100 group-hover:text-indigo-600 transition-colors">{s.name}</p>
-                <p className="text-xs text-slate-500 uppercase font-bold tracking-tighter">{s.exercises.length} Exercises • {s.exercises.reduce((acc, e) => acc + e.sets.length, 0)} Sets</p>
+          <div className="space-y-3">
+            {sessionsForSelectedDay.map(s => (
+              <div 
+                key={s.id} 
+                onClick={() => onEditSession(s)}
+                className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex justify-between items-center cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${s.isCompleted ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20' : 'bg-amber-50 text-amber-600 dark:bg-amber-900/20'}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-bold text-lg dark:text-slate-100 group-hover:text-indigo-600 transition-colors leading-tight">{s.name}</p>
+                    <div className="flex gap-2 items-center">
+                       <span className="text-[10px] uppercase font-black text-slate-400 tracking-tighter">{s.exercises.length} Exercises</span>
+                       <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                       <span className="text-[10px] uppercase font-black text-slate-400 tracking-tighter">{s.exercises.reduce((acc, e) => acc + e.sets.length, 0)} Sets</span>
+                    </div>
+                  </div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-300 group-hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-300 group-hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          ))
+            ))}
+          </div>
         ) : (
-          <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-            <p className="text-slate-400 italic text-sm">No training logged for this day.</p>
+          <div className="text-center py-16 bg-slate-100/50 dark:bg-slate-800/30 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+            <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+               </svg>
+            </div>
+            <p className="text-slate-500 font-bold dark:text-slate-400">No training logged yet.</p>
+            <p className="text-slate-400 text-xs mt-1">Consistency is key to the 8a send.</p>
             <button 
               onClick={() => onAddSession(selectedDateObject)}
-              className="mt-3 text-sm font-bold text-indigo-600 hover:underline"
+              className="mt-6 text-sm font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 px-6 py-2 rounded-xl transition-colors"
             >
-              Log workout for this day
+              Log Session Now
             </button>
           </div>
         )}
