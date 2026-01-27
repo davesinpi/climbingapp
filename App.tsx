@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppView, Session, WorkoutTemplate, LoggedExercise, ScheduledWorkout } from './types';
+import { AppView, Session, WorkoutTemplate, LoggedExercise, ScheduledWorkout, Exercise } from './types';
 import { StorageService } from './services/storage';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
@@ -90,9 +90,12 @@ const CalendarView: React.FC = () => {
 
 const HistoryView: React.FC<{ onEditSession: (s: Session) => void; onDeleteSession: (id: string) => void }> = ({ onEditSession, onDeleteSession }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
+  const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   
   useEffect(() => {
     setSessions(StorageService.getSessions().filter(s => s.isCompleted).reverse());
+    setExerciseLibrary(StorageService.getExercises());
   }, []);
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
@@ -104,21 +107,26 @@ const HistoryView: React.FC<{ onEditSession: (s: Session) => void; onDeleteSessi
     }
   };
 
+  const getExerciseName = (id: string) => exerciseLibrary.find(e => e.id === id)?.name || 'Unknown Exercise';
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold dark:text-white transition-colors">Past Sessions</h1>
       <div className="space-y-4">
         {sessions.map(s => (
           <div key={s.id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors group relative">
-            <div className="flex justify-between items-start mb-4">
+            <div 
+              className="flex justify-between items-start mb-4 cursor-pointer"
+              onClick={() => setExpandedSessionId(expandedSessionId === s.id ? null : s.id)}
+            >
               <div>
                 <h3 className="text-xl font-bold dark:text-slate-100">{s.name}</h3>
                 <p className="text-slate-500 dark:text-slate-400">{new Date(s.date).toLocaleDateString()} • {s.endTime ? 'Completed' : 'Partial'}</p>
               </div>
               <div className="flex gap-2">
                 <button 
-                  onClick={() => onEditSession(s)}
-                  className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); onEditSession(s); }}
+                  className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors bg-slate-50 dark:bg-slate-800 rounded-lg"
                   title="Edit Session"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -127,7 +135,7 @@ const HistoryView: React.FC<{ onEditSession: (s: Session) => void; onDeleteSessi
                 </button>
                 <button 
                   onClick={(e) => handleDelete(s.id, e)}
-                  className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors bg-slate-50 dark:bg-slate-800 rounded-lg"
                   title="Delete Session"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -136,7 +144,11 @@ const HistoryView: React.FC<{ onEditSession: (s: Session) => void; onDeleteSessi
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+
+            <div 
+              className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm cursor-pointer"
+              onClick={() => setExpandedSessionId(expandedSessionId === s.id ? null : s.id)}
+            >
               <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded transition-colors">
                 <p className="text-slate-400 dark:text-slate-500 text-xs uppercase font-bold tracking-tighter">Exercises</p>
                 <p className="font-bold dark:text-slate-200">{s.exercises.length}</p>
@@ -149,7 +161,39 @@ const HistoryView: React.FC<{ onEditSession: (s: Session) => void; onDeleteSessi
                 <p className="text-slate-400 dark:text-slate-500 text-xs uppercase font-bold tracking-tighter">Pain Score</p>
                 <p className="font-bold text-amber-600 dark:text-amber-500">{s.painLevel ?? 'N/A'}/10</p>
               </div>
+              <div className="flex items-center justify-center text-slate-400 dark:text-slate-600">
+                 <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 transform transition-transform ${expandedSessionId === s.id ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                 </svg>
+              </div>
             </div>
+
+            {expandedSessionId === s.id && (
+              <div className="mt-6 space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-200">
+                {s.exercises.map((ex, exIdx) => (
+                  <div key={exIdx} className="space-y-2">
+                    <h4 className="font-bold text-slate-700 dark:text-slate-300 text-sm flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                      {getExerciseName(ex.exerciseId)}
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-4">
+                      {ex.sets.map((set, setIdx) => (
+                        <div key={set.id} className="text-xs bg-slate-50 dark:bg-slate-800 p-2 rounded flex justify-between items-center text-slate-600 dark:text-slate-400">
+                          <span className="font-mono">Set {setIdx + 1}</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-200">
+                            {set.weight ? `${set.weight}kg` : ''} 
+                            {set.reps ? ` × ${set.reps}` : ''}
+                            {set.grade ? ` ${set.grade}` : ''}
+                            {set.attempts ? ` (${set.attempts} att, ${set.sends} sends)` : ''}
+                          </span>
+                          <span className="opacity-60">RPE {set.rpe || '-'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         {sessions.length === 0 && (
@@ -201,8 +245,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteSession = (id: string) => {
-    // Session is already deleted from storage in HistoryView
-    // This hook is for any app-level cleanup needed
+    // Handled in HistoryView state for immediate feedback
   };
 
   if (activeView === 'ActiveSession' && activeSession) {
@@ -223,7 +266,7 @@ const App: React.FC = () => {
 
   return (
     <Layout activeView={activeView} setActiveView={setActiveView}>
-      {activeView === 'Dashboard' && <Dashboard />}
+      {activeView === 'Dashboard' && <Dashboard onEditSession={handleEditSession} />}
       {activeView === 'Templates' && <TemplatesView onStartSession={startSessionFromTemplate} />}
       {activeView === 'Calendar' && <CalendarView />}
       {activeView === 'History' && <HistoryView onEditSession={handleEditSession} onDeleteSession={handleDeleteSession} />}
