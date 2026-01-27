@@ -19,12 +19,14 @@
       }
       
       // Shim for process.env and global for standard browser environment
-      const env = {
-        API_KEY: "AIzaSyDUM35eKEZ-hR8CUjWT_e_LttNL5RwV2TU"
+      // Evaluation happens before modules start loading
+      window.process = { 
+        env: {
+          API_KEY: "AIzaSyDUM35eKEZ-hR8CUjWT_e_LttNL5RwV2TU"
+        } 
       };
-      window.process = { env };
       window.global = window;
-      globalThis.process = { env };
+      globalThis.process = window.process;
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,6 +40,19 @@
       .dark ::-webkit-scrollbar-track { background: #1e293b; }
       .dark ::-webkit-scrollbar-thumb { background: #475569; }
       #root { min-height: 100%; }
+      
+      /* Simple error overlay */
+      #error-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9);
+        color: #ff4444;
+        padding: 40px;
+        z-index: 9999;
+        font-family: monospace;
+        overflow: auto;
+      }
     </style>
 <script type="importmap">
 {
@@ -54,8 +69,35 @@
 </script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 h-full">
+    <div id="error-overlay">
+      <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">Runtime Error</h1>
+      <pre id="error-message" style="white-space: pre-wrap;"></pre>
+    </div>
     <div id="root"></div>
-    <!-- Explicitly import the entry point for standard browser compatibility -->
+
+    <script>
+      // Global error handler to capture boot errors
+      window.onerror = function(msg, url, line, col, error) {
+        const overlay = document.getElementById('error-overlay');
+        const msgEl = document.getElementById('error-message');
+        if (overlay && msgEl) {
+          overlay.style.display = 'block';
+          msgEl.textContent = error ? error.stack : msg + '\n' + url + ':' + line + ':' + col;
+        }
+        return false;
+      };
+      
+      // Handle unhandled promise rejections (often from async imports)
+      window.onunhandledrejection = function(event) {
+        const overlay = document.getElementById('error-overlay');
+        const msgEl = document.getElementById('error-message');
+        if (overlay && msgEl) {
+          overlay.style.display = 'block';
+          msgEl.textContent = 'Unhandled Rejection: ' + (event.reason ? (event.reason.stack || event.reason) : 'Unknown reason');
+        }
+      };
+    </script>
+    
     <script type="module" src="index.tsx"></script>
 </body>
 </html>
