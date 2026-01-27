@@ -78,20 +78,22 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave, onCan
   };
 
   return (
-    <div className="space-y-8 pb-32 animate-in fade-in duration-300">
-      <header className="flex justify-between items-center sticky top-0 bg-slate-50 dark:bg-slate-950 py-4 z-20">
+    <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-80px)] bg-slate-50 dark:bg-slate-950 animate-in fade-in duration-300 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800">
+      {/* Sticky Header */}
+      <header className="flex-none bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-6 flex justify-between items-center z-20">
         <div>
-          <h2 className="text-3xl font-bold dark:text-white">{template ? 'Edit Template' : 'New Template'}</h2>
-          <p className="text-slate-500 text-sm">Design your training structure</p>
+          <h2 className="text-2xl font-bold dark:text-white leading-tight">{template ? 'Edit Template' : 'New Template'}</h2>
+          <p className="text-slate-500 text-xs">Design your training structure</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={onCancel} className="px-4 py-2 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">Cancel</button>
-          <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg shadow-lg shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 transition-all active:scale-95">Save Template</button>
+        <div className="flex gap-2">
+          <button onClick={onCancel} className="px-4 py-2 text-slate-500 dark:text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">Cancel</button>
+          <button onClick={handleSave} className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all active:scale-95">Save</button>
         </div>
       </header>
 
-      <div className="space-y-6">
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Workout Name</label>
             <input 
@@ -127,7 +129,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave, onCan
           </div>
 
           {blocks.map((block, bIdx) => (
-            <div key={block.id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative group">
+            <div key={block.id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative group">
               <button 
                 onClick={() => removeBlock(bIdx)}
                 className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors"
@@ -154,7 +156,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave, onCan
 
               <div className="space-y-3">
                 {block.exercises.map((be, eIdx) => (
-                  <div key={eIdx} className="flex gap-3 items-end bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div key={eIdx} className="flex gap-3 items-end bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-50 dark:border-slate-800">
                     <div className="flex-1">
                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Exercise</label>
                       <select 
@@ -197,7 +199,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave, onCan
           ))}
 
           {blocks.length === 0 && (
-            <div className="text-center py-12 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+            <div className="text-center py-12 bg-slate-100 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
                <p className="text-slate-400 italic text-sm">No blocks added. Start building your session!</p>
                <button onClick={addBlock} className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Add First Block</button>
             </div>
