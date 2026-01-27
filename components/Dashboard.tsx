@@ -1,11 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { StorageService } from '../services/storage';
 import { Session, Exercise } from '../types';
 import { GeminiService } from '../services/gemini';
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onEditSession: (session: Session) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onEditSession }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [aiAnalysis, setAiAnalysis] = useState<string>('Loading AI insights...');
@@ -139,19 +143,28 @@ const Dashboard: React.FC = () => {
         <h3 className="text-lg font-bold mb-4 dark:text-slate-100">Recent Sessions</h3>
         <div className="space-y-4">
           {sessions.slice(-3).reverse().map(s => (
-            <div key={s.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+            <div 
+              key={s.id} 
+              onClick={() => onEditSession(s)}
+              className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700 group"
+            >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold">
+                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold group-hover:scale-110 transition-transform">
                   {new Date(s.date).getDate()}
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900 dark:text-slate-100">{s.name}</p>
+                  <p className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{s.name}</p>
                   <p className="text-sm text-slate-500 dark:text-slate-400">{new Date(s.date).toDateString()}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-semibold text-indigo-600 dark:text-indigo-400">{s.exercises.length} Exercises</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 uppercase font-bold">{s.exercises.reduce((acc, e) => acc + e.sets.length, 0)} Total Sets</p>
+              <div className="text-right flex items-center gap-4">
+                <div>
+                  <p className="font-semibold text-indigo-600 dark:text-indigo-400">{s.exercises.length} Exercises</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 uppercase font-bold">{s.exercises.reduce((acc, e) => acc + e.sets.length, 0)} Total Sets</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-300 dark:text-slate-700 group-hover:text-indigo-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
             </div>
           ))}
