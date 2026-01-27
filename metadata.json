@@ -1,5 +1,5 @@
 {
-  "name": "Send It - Climbing Workout Planner",
+  "name": "Road to V10 - Climbing Workout Planner",
   "description": "A comprehensive climbing-specific workout planner and logger with guided sessions, progress tracking, and AI-powered performance analysis.",
   "requestFramePermissions": [
     "microphone"

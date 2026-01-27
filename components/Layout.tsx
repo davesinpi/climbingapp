@@ -80,8 +80,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, ha
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col p-6 shadow-sm z-50">
         <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="bg-indigo-600 w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-xl">S</div>
-          <h2 className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">SEND IT</h2>
+          <div className="bg-indigo-600 w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-xl">R</div>
+          <h2 className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight leading-none">ROAD TO<br/><span className="text-3xl">V10</span></h2>
         </div>
         
         <nav className="flex-1 space-y-2">
