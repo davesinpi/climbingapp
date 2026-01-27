@@ -92,4 +92,4 @@ export interface ScheduledWorkout {
   templateId: string;
 }
 
-export type AppView = 'Dashboard' | 'Calendar' | 'Templates' | 'Exercises' | 'ActiveSession' | 'History' | 'Analysis';
+export type AppView = 'Dashboard' | 'Calendar' | 'Templates' | 'Exercises' | 'ActiveSession' | 'History' | 'Analysis' | 'TemplateEditor';
