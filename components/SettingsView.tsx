@@ -6,13 +6,14 @@ const SettingsView: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
 
   const checkApiKeyStatus = async () => {
-    // Rely primarily on the window.aistudio helper for the status
+    // Exclusively rely on the runtime helper to avoid build-time inlining of secrets
     if ((window as any).aistudio?.hasSelectedApiKey) {
       const has = await (window as any).aistudio.hasSelectedApiKey();
       setHasApiKey(has);
     } else {
-      // Fallback check for environment injection
-      setHasApiKey(!!process.env.API_KEY);
+      // In non-aistudio environments, we check if the key is present in a way that avoids string literal inlining
+      const keyExists = Object.prototype.hasOwnProperty.call(process.env, 'API_KEY') && process.env.API_KEY !== "";
+      setHasApiKey(keyExists);
     }
   };
 
@@ -24,13 +25,13 @@ const SettingsView: React.FC = () => {
     if ((window as any).aistudio?.openSelectKey) {
       try {
         await (window as any).aistudio.openSelectKey();
-        // Promptly update the status UI
-        await checkApiKeyStatus();
+        // Assume success as per platform guidelines and refresh the status view
+        setHasApiKey(true);
       } catch (err) {
         console.error("Manual key selection failed:", err);
       }
     } else {
-      alert("Manual API selection is restricted to the current application environment.");
+      alert("API Key selection is managed by the environment. If features are locked, please check your project configuration.");
     }
   };
 
@@ -50,7 +51,7 @@ const SettingsView: React.FC = () => {
     <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header>
         <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">System Settings</h1>
-        <p className="text-slate-500 dark:text-slate-400">Manage your training environment and AI preferences.</p>
+        <p className="text-slate-500 dark:text-slate-400">Manage your training environment and preferences.</p>
       </header>
 
       <div className="space-y-6">
@@ -64,20 +65,20 @@ const SettingsView: React.FC = () => {
 
           <div className="relative z-10 space-y-6">
             <div className="flex items-center gap-4">
-              <div className={`w-3 h-3 rounded-full animate-pulse ${hasApiKey ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${hasApiKey ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-amber-500 shadow-[0_0_10px_#f59e0b]'}`}></div>
               <h3 className="text-xl font-bold dark:text-white">AI Coach: Manual Configuration</h3>
             </div>
 
             <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-              Your training analysis is powered by <span className="text-indigo-600 dark:text-indigo-400 font-bold">Gemini 3</span>. 
-              To enable coaching tips, you must manually link a valid API key from a project with billing enabled.
+              Performance analysis is powered by <span className="text-indigo-600 dark:text-indigo-400 font-bold">Gemini 3</span>. 
+              To enable coaching, you must link an API key from a project with billing enabled.
             </p>
 
             <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Connectivity Status</span>
                 <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${hasApiKey ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {hasApiKey ? "API Linked" : "No Key Active"}
+                  {hasApiKey ? "API Ready" : "Setup Required"}
                 </span>
               </div>
 
@@ -92,9 +93,7 @@ const SettingsView: React.FC = () => {
               </button>
 
               <p className="text-[10px] text-center text-slate-400 font-medium">
-                Selection is required for initial activation. Projects must have Gemini API access.
-                <br/>
-                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline">View Billing Documentation</a>
+                Linkage is required for analysis features. Visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline">Billing Docs</a> for project setup.
               </p>
             </div>
           </div>
@@ -113,7 +112,7 @@ const SettingsView: React.FC = () => {
                     </div>
                     <div>
                        <p className="font-bold dark:text-slate-200">Dark Interface</p>
-                       <p className="text-xs text-slate-500">Toggle dark/light mode preference.</p>
+                       <p className="text-xs text-slate-500">Toggle visual theme.</p>
                     </div>
                  </div>
                  <button 
@@ -132,20 +131,20 @@ const SettingsView: React.FC = () => {
                        </svg>
                     </div>
                     <div>
-                       <p className="font-bold dark:text-slate-200">Data Cleanup</p>
-                       <p className="text-xs text-slate-500">Permanently delete all logs and templates.</p>
+                       <p className="font-bold dark:text-slate-200">Reset Data</p>
+                       <p className="text-xs text-slate-500">Wipe all local training data.</p>
                     </div>
                  </div>
                  <button 
                    onClick={() => {
-                     if(window.confirm("CRITICAL: This will permanently delete ALL your training history and custom templates. This action cannot be undone. Proceed?")) {
+                     if(window.confirm("CRITICAL: Wipe all training history? This cannot be undone.")) {
                        localStorage.clear();
                        window.location.reload();
                      }
                    }}
                    className="px-4 py-2 text-red-500 text-xs font-black hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg uppercase tracking-widest transition-colors"
                  >
-                    Reset App
+                    Reset
                  </button>
               </div>
            </div>
@@ -155,7 +154,7 @@ const SettingsView: React.FC = () => {
       <footer className="text-center pt-8">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-800">
           <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-          <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-black tracking-widest">ROAD TO V10 • BUILD 1.4.2</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-black tracking-widest">ROAD TO V10 • BUILD 1.5.0</p>
         </div>
       </footer>
     </div>
