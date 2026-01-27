@@ -2,11 +2,21 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Session } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Helper to safely get the API key from environment
+const getApiKey = () => {
+  try {
+    return (window as any).process?.env?.API_KEY || (process as any)?.env?.API_KEY || '';
+  } catch (e) {
+    return '';
+  }
+};
+
+const apiKey = getApiKey();
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 export const GeminiService = {
   async analyzeSession(session: Session) {
-    if (!process.env.API_KEY) return "AI analysis unavailable (API key not provided).";
+    if (!ai) return "AI analysis unavailable (API key not provided in environment).";
 
     const prompt = `
       As a climbing coach, analyze this training session and provide 3 concise bullet points for improvement or praise.
@@ -23,7 +33,7 @@ export const GeminiService = {
           temperature: 0.7,
         }
       });
-      return response.text;
+      return response.text || "No analysis generated.";
     } catch (error) {
       console.error("Gemini Analysis Error:", error);
       return "Unable to analyze session at this time.";
@@ -31,7 +41,7 @@ export const GeminiService = {
   },
 
   async suggestWorkout(history: Session[]) {
-    if (!process.env.API_KEY) return "No API Key found.";
+    if (!ai) return "AI tips disabled (No API Key).";
 
     const prompt = `
       Based on the user's last 5 climbing sessions, suggest a focus for their next session. 
@@ -44,7 +54,7 @@ export const GeminiService = {
         model: 'gemini-3-flash-preview',
         contents: prompt,
       });
-      return response.text;
+      return response.text || "Start training to get suggestions.";
     } catch (error) {
       return "Could not generate suggestion.";
     }
