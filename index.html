@@ -12,21 +12,21 @@
         theme: {
           extend: {
             colors: {
-              // Custom colors can be added here
+              // Custom colors
             }
           }
         }
-      }
-      
-      // Shim for process.env and global for standard browser environment
-      // Evaluation happens before modules start loading
-      window.process = { 
-        env: {
-          API_KEY: "AIzaSyDUM35eKEZ-hR8CUjWT_e_LttNL5RwV2TU"
-        } 
       };
+
+      // Robust shim for environment variables in the browser
+      const API_KEY = "AIzaSyDUM35eKEZ-hR8CUjWT_e_LttNL5RwV2TU";
+      const processShim = { 
+        env: { API_KEY } 
+      };
+      
+      window.process = processShim;
       window.global = window;
-      globalThis.process = window.process;
+      globalThis.process = processShim;
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,7 +41,6 @@
       .dark ::-webkit-scrollbar-thumb { background: #475569; }
       #root { min-height: 100%; }
       
-      /* Simple error overlay */
       #error-overlay {
         display: none;
         position: fixed;
@@ -72,11 +71,11 @@
     <div id="error-overlay">
       <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">Runtime Error</h1>
       <pre id="error-message" style="white-space: pre-wrap;"></pre>
+      <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #444; color: white; border: none; border-radius: 5px; cursor: pointer;">Reload Page</button>
     </div>
     <div id="root"></div>
 
     <script>
-      // Global error handler to capture boot errors
       window.onerror = function(msg, url, line, col, error) {
         const overlay = document.getElementById('error-overlay');
         const msgEl = document.getElementById('error-message');
@@ -87,7 +86,6 @@
         return false;
       };
       
-      // Handle unhandled promise rejections (often from async imports)
       window.onunhandledrejection = function(event) {
         const overlay = document.getElementById('error-overlay');
         const msgEl = document.getElementById('error-message');
