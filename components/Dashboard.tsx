@@ -16,8 +16,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onC
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [aiAnalysis, setAiAnalysis] = useState<string>('Loading AI insights...');
   const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // Small delay ensures the layout engine has finished initial passes
+    const timer = setTimeout(() => setIsMounted(true), 50);
+    
     const s = StorageService.getSessions().filter(sess => sess.isCompleted);
     setSessions(s);
     setExercises(StorageService.getExercises());
@@ -32,14 +36,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onC
       setIsDark(document.documentElement.classList.contains('dark'));
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
+    
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
   }, []);
 
   const getRecentVolume = () => {
-    return sessions.slice(-7).map(s => ({
+    const data = sessions.slice(-7).map(s => ({
       date: new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       sets: s.exercises.reduce((acc, ex) => acc + ex.sets.length, 0)
     }));
+    while (data.length < 7) {
+      data.unshift({ date: '-', sets: 0 });
+    }
+    return data;
   };
 
   const getPRs = () => {
@@ -68,9 +80,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onC
         <p className="text-slate-500 dark:text-slate-400">Track your progress and send your projects.</p>
       </header>
 
-      {/* Active Session Callout */}
       {activeSession && (
-        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-3xl p-6 shadow-xl shadow-indigo-200 dark:shadow-none text-white relative overflow-hidden group">
+        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-3xl p-6 shadow-xl text-white relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
              <svg xmlns="http://www.w3.org/2000/svg" className="h-32 w-32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -101,7 +112,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onC
         </div>
       )}
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {getPRs().map((pr, i) => (
           <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between">
@@ -115,47 +125,47 @@ const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onC
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Charts */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 min-w-0">
           <h3 className="text-lg font-bold mb-6 flex items-center gap-2 dark:text-slate-100">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
             Training Volume (Sets)
           </h3>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={getRecentVolume()}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
-                <XAxis 
-                  dataKey="date" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 12, fill: isDark ? '#94a3b8' : '#64748b' }} 
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 12, fill: isDark ? '#94a3b8' : '#64748b' }} 
-                />
-                <Tooltip 
-                  cursor={{ fill: isDark ? '#1e293b' : '#f8fafc' }}
-                  contentStyle={{ 
-                    borderRadius: '12px', 
-                    border: 'none', 
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                    backgroundColor: isDark ? '#0f172a' : '#fff',
-                    color: isDark ? '#f1f5f9' : '#0f172a'
-                  }}
-                />
-                <Bar dataKey="sets" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-[250px] w-full min-w-0">
+            {isMounted && (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <BarChart data={getRecentVolume()} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 10, fill: isDark ? '#94a3b8' : '#64748b' }} 
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 10, fill: isDark ? '#94a3b8' : '#64748b' }} 
+                  />
+                  <Tooltip 
+                    cursor={{ fill: isDark ? '#1e293b' : '#f8fafc' }}
+                    contentStyle={{ 
+                      borderRadius: '12px', 
+                      border: 'none', 
+                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                      backgroundColor: isDark ? '#1e293b' : '#fff',
+                      color: isDark ? '#f1f5f9' : '#0f172a'
+                    }}
+                  />
+                  <Bar dataKey="sets" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
-        {/* AI Analysis */}
-        <div className="bg-indigo-900 dark:bg-indigo-950 text-indigo-100 p-6 rounded-2xl shadow-lg border border-indigo-800 dark:border-indigo-900 transition-colors">
+        <div className="bg-indigo-900 dark:bg-indigo-950 text-indigo-100 p-6 rounded-2xl shadow-lg border border-indigo-800 dark:border-indigo-900">
           <div className="flex items-center gap-2 mb-4">
             <div className="p-2 bg-indigo-700 dark:bg-indigo-800 rounded-lg">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -173,7 +183,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onC
         </div>
       </div>
 
-      {/* Recent History */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
         <h3 className="text-lg font-bold mb-4 dark:text-slate-100">Recent Sessions</h3>
         <div className="space-y-4">
