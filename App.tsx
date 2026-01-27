@@ -215,8 +215,13 @@ const CalendarView: React.FC<{
   const currentYear = currentDate.getFullYear();
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // 0 (Sun) to 6 (Sat)
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
   
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
   const prevMonth = () => {
     setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
   };
@@ -239,29 +244,40 @@ const CalendarView: React.FC<{
     });
   };
 
+  const getSessionsForMonth = () => {
+    return sessions.filter(s => {
+      const d = new Date(s.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+  };
+
   const sessionsForSelectedDay = getSessionsForDay(selectedDay);
+  const monthSessions = getSessionsForMonth();
   const selectedDateObject = new Date(currentYear, currentMonth, selectedDay);
 
-  // Years array for jump-to feature
   const years = Array.from({ length: 2099 - 1980 + 1 }, (_, i) => 1980 + i);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-3xl font-black dark:text-white tracking-tight">
-              {currentDate.toLocaleString('default', { month: 'long' })}
-            </h1>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-3">
+            <select 
+              value={currentMonth}
+              onChange={(e) => setCurrentDate(new Date(currentYear, parseInt(e.target.value), 1))}
+              className="bg-transparent text-3xl font-black dark:text-white tracking-tight outline-none cursor-pointer border-none p-0 focus:ring-0 appearance-none"
+            >
+              {months.map((m, i) => <option key={m} value={i} className="bg-white dark:bg-slate-900 text-base">{m}</option>)}
+            </select>
             <select 
               value={currentYear}
               onChange={(e) => setCurrentDate(new Date(parseInt(e.target.value), currentMonth, 1))}
-              className="bg-transparent text-2xl font-bold text-indigo-600 dark:text-indigo-400 outline-none cursor-pointer border-none p-0 focus:ring-0"
+              className="bg-transparent text-3xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight outline-none cursor-pointer border-none p-0 focus:ring-0 appearance-none"
             >
               {years.map(y => <option key={y} value={y} className="bg-white dark:bg-slate-900 text-base">{y}</option>)}
             </select>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Long-term planning & training history</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Training planning until 2099</p>
         </div>
         <div className="flex gap-2">
           <button 
@@ -288,7 +304,6 @@ const CalendarView: React.FC<{
           ))}
         </div>
         <div className="grid grid-cols-7 gap-2">
-          {/* Empty cells for first week offset */}
           {Array.from({ length: firstDayOfMonth }).map((_, i) => (
             <div key={`empty-${i}`} className="aspect-square opacity-20"></div>
           ))}
@@ -365,20 +380,64 @@ const CalendarView: React.FC<{
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 bg-slate-100/50 dark:bg-slate-800/30 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-            <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-               </svg>
+          <div className="text-center py-12 bg-slate-100/50 dark:bg-slate-800/30 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+            <p className="text-slate-500 font-bold dark:text-slate-400 text-sm">No training logged for this day.</p>
+          </div>
+        )}
+      </div>
+
+      {/* History Function: Monthly Overview */}
+      <div className="mt-12 space-y-6">
+        <div className="flex items-center gap-2 px-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h2 className="text-2xl font-black dark:text-slate-100 tracking-tight">History for {months[currentMonth]} {currentYear}</h2>
+        </div>
+        
+        {monthSessions.length > 0 ? (
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Workouts</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white">{monthSessions.length}</p>
+              </div>
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Completed</p>
+                <p className="text-2xl font-black text-emerald-500">{monthSessions.filter(s => s.isCompleted).length}</p>
+              </div>
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Sets</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white">{monthSessions.reduce((acc, s) => acc + s.exercises.reduce((exAcc, ex) => exAcc + ex.sets.length, 0), 0)}</p>
+              </div>
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Avg Vol / Sess</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white">{(monthSessions.reduce((acc, s) => acc + s.exercises.length, 0) / monthSessions.length).toFixed(1)}</p>
+              </div>
             </div>
-            <p className="text-slate-500 font-bold dark:text-slate-400">No training logged yet.</p>
-            <p className="text-slate-400 text-xs mt-1">Consistency is key to the 8a send.</p>
-            <button 
-              onClick={() => onAddSession(selectedDateObject)}
-              className="mt-6 text-sm font-black text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 px-6 py-2 rounded-xl transition-colors"
-            >
-              Log Session Now
-            </button>
+            
+            <div className="pt-4 space-y-2">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">Session Log</p>
+              <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                {monthSessions.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(s => (
+                  <div key={s.id} onClick={() => onEditSession(s)} className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-colors border border-transparent hover:border-slate-100 dark:hover:border-slate-700 group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-xs font-black text-indigo-600">
+                        {new Date(s.date).getDate()}
+                      </div>
+                      <p className="font-bold text-sm dark:text-slate-200">{s.name}</p>
+                    </div>
+                    <span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${s.isCompleted ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'text-amber-500 bg-amber-50 dark:bg-amber-900/20'}`}>
+                      {s.isCompleted ? 'Done' : 'Draft'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-12 text-center bg-slate-100/50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+            <p className="text-slate-400 font-bold italic">No history found for this period.</p>
           </div>
         )}
       </div>
@@ -409,7 +468,7 @@ const HistoryView: React.FC<{ onEditSession: (s: Session) => void; onDeleteSessi
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold dark:text-white">Logbook</h1>
+      <h1 className="text-3xl font-bold dark:text-white">Full History</h1>
       <div className="space-y-4">
         {sessions.map(s => (
           <div key={s.id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden group">
@@ -477,7 +536,6 @@ const App: React.FC = () => {
   const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplate[]>([]);
   
-  // State for date picking from calendar
   const [dateForNewSession, setDateForNewSession] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -639,7 +697,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Modal for picking a template when adding to a specific date */}
       <TemplateSelectorModal 
         isOpen={dateForNewSession !== null}
         onClose={() => setDateForNewSession(null)}
