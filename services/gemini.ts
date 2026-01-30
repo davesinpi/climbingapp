@@ -3,11 +3,12 @@ import { GoogleGenAI } from "@google/genai";
 import { Session } from "../types";
 
 // Helper to get a fresh AI instance with the current API key
+// We create a new instance right before making an API call to ensure it uses the most 
+// up-to-date API key from the aistudio selection dialog.
 const getAI = () => {
-  // Use the standard environment variable injected by the platform
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("API configuration is missing. Please visit Settings.");
+    throw new Error("API configuration is missing. Please visit Settings or Log in via Google.");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -33,7 +34,11 @@ export const GeminiService = {
       return response.text || "Analysis could not be generated at this time.";
     } catch (error) {
       console.error("Gemini Analysis Error:", error);
-      return "AI analysis unavailable. Please check your API configuration in Settings.";
+      if (error instanceof Error && error.message.includes("Requested entity was not found")) {
+        // Platform specific error handling: reset key if it appears invalid
+        return "Authentication error with Google Project. Please re-select your key in Settings.";
+      }
+      return "AI analysis unavailable. Please check your Google Account connection in Settings.";
     }
   },
 
@@ -53,7 +58,7 @@ export const GeminiService = {
       return response.text || "Log more sessions to receive AI training suggestions.";
     } catch (error) {
       console.error("Gemini Suggestion Error:", error);
-      return "Unable to generate AI suggestion. Ensure your API key is correctly configured.";
+      return "Unable to generate AI suggestion. Ensure your Google Account is connected in Settings.";
     }
   }
 };
