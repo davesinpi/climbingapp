@@ -16,6 +16,13 @@ export enum BlockType {
   Cooldown = 'Cooldown'
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  photoURL: string;
+}
+
 export interface Exercise {
   id: string;
   name: string;
@@ -92,4 +99,4 @@ export interface ScheduledWorkout {
   templateId: string;
 }
 
-export type AppView = 'Dashboard' | 'Calendar' | 'Templates' | 'Exercises' | 'ActiveSession' | 'History' | 'Analysis' | 'TemplateEditor' | 'Settings';
+export type AppView = 'Login' | 'Dashboard' | 'Calendar' | 'Templates' | 'Exercises' | 'ActiveSession' | 'History' | 'Analysis' | 'TemplateEditor' | 'Settings';

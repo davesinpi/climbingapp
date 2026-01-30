@@ -1,15 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppView } from '../types';
+import { AppView, User } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
   activeView: AppView;
   setActiveView: (view: AppView) => void;
   hasActiveSession?: boolean;
+  user: User | null;
+  onLogout: () => void;
+  isOnline: boolean;
+  isSyncing: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, hasActiveSession }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, hasActiveSession, user, onLogout, isOnline, isSyncing }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
@@ -28,7 +32,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, ha
     }
   }, [isDarkMode]);
 
-  // Dynamically build nav items based on session state
   const getNavItems = () => {
     const items = [
       { view: 'Dashboard' as AppView, label: 'Home', icon: (
@@ -123,6 +126,33 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, ha
         </nav>
         
         <div className="mt-auto space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+           {user && (
+             <div className="flex flex-col gap-2 mb-4">
+                <div className="flex items-center gap-3 px-2 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                   <img src={user.photoURL} alt={user.name} className="w-10 h-10 rounded-full border-2 border-indigo-200" />
+                   <div className="flex-1 min-w-0">
+                     <p className="text-sm font-bold truncate dark:text-white leading-none mb-1">{user.name}</p>
+                     <div className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? (isSyncing ? 'bg-indigo-400 animate-pulse' : 'bg-emerald-500') : 'bg-amber-500'}`}></span>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">
+                           {isOnline ? (isSyncing ? 'Syncing...' : 'Cloud Active') : 'Offline Mode'}
+                        </p>
+                     </div>
+                   </div>
+                   <button onClick={onLogout} className="p-2 text-slate-400 hover:text-red-500 transition-colors" title="Logout">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                   </button>
+                </div>
+                {!isOnline && (
+                  <div className="px-3 py-1 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-500 text-[8px] font-black uppercase tracking-tighter text-center rounded-lg border border-amber-100 dark:border-amber-900 animate-pulse">
+                    Saving to local storage
+                  </div>
+                )}
+             </div>
+           )}
+
            <button 
              onClick={() => setIsDarkMode(!isDarkMode)}
              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
@@ -133,7 +163,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, ha
                <><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg><span>Dark Mode</span></>
              )}
            </button>
-           <button onClick={() => setActiveView('Exercises')} className="w-full text-left px-4 py-2 text-sm text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400">Exercise Library</button>
         </div>
       </aside>
 

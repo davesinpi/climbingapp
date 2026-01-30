@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppView, Session, WorkoutTemplate, LoggedExercise, ScheduledWorkout, Exercise, ExerciseType } from './types';
+import { AppView, Session, WorkoutTemplate, User, Exercise, ExerciseType } from './types';
 import { StorageService } from './services/storage';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import SessionLogger from './components/SessionLogger';
 import TemplateEditor from './components/TemplateEditor';
 import SettingsView from './components/SettingsView';
+import LoginView from './components/LoginView';
 
 const ExerciseModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (e: Exercise) => void }> = ({ isOpen, onClose, onSave }) => {
   const [name, setName] = useState('');
@@ -529,14 +530,19 @@ const HistoryView: React.FC<{ onEditSession: (s: Session) => void; onDeleteSessi
 };
 
 const App: React.FC = () => {
-  const [activeView, setActiveView] = useState<AppView>('Dashboard');
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('v10_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [activeView, setActiveView] = useState<AppView>(currentUser ? 'Dashboard' : 'Login');
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<WorkoutTemplate | null>(null);
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
   const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplate[]>([]);
-  
   const [dateForNewSession, setDateForNewSession] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -549,7 +555,51 @@ const App: React.FC = () => {
     if (current) {
       setActiveSession(current);
     }
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      StorageService.processSyncQueue();
+    };
+    const handleOffline = () => setIsOnline(false);
+    
+    const handleSyncStarted = () => setIsSyncing(true);
+    const handleSyncComplete = () => {
+      setIsSyncing(false);
+      // Refresh state to show synced indicators
+      setAllSessions(StorageService.getSessions());
+    };
+    const handleSyncFailed = () => setIsSyncing(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('sync-started', handleSyncStarted);
+    window.addEventListener('sync-complete', handleSyncComplete);
+    window.addEventListener('sync-failed', handleSyncFailed);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('sync-started', handleSyncStarted);
+      window.removeEventListener('sync-complete', handleSyncComplete);
+      window.removeEventListener('sync-failed', handleSyncFailed);
+    };
   }, []);
+
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
+    localStorage.setItem('v10_user', JSON.stringify(user));
+    setActiveView('Dashboard');
+    // Start initial sync
+    StorageService.processSyncQueue();
+  };
+
+  const handleLogout = () => {
+    if (window.confirm("Are you sure you want to sign out? Your local data will remain saved on this device.")) {
+      setCurrentUser(null);
+      localStorage.removeItem('v10_user');
+      setActiveView('Login');
+    }
+  };
 
   const refreshSessions = () => {
     const sessions = StorageService.getSessions();
@@ -629,13 +679,27 @@ const App: React.FC = () => {
     }
   };
 
+  if (activeView === 'Login' && !currentUser) {
+    return <LoginView onLogin={handleLogin} />;
+  }
+
   return (
-    <Layout activeView={activeView} setActiveView={setActiveView} hasActiveSession={activeSession !== null}>
+    <Layout 
+      activeView={activeView} 
+      setActiveView={setActiveView} 
+      hasActiveSession={activeSession !== null}
+      user={currentUser}
+      onLogout={handleLogout}
+      isOnline={isOnline}
+      isSyncing={isSyncing}
+    >
       {activeView === 'Dashboard' && (
         <Dashboard 
           activeSession={activeSession}
           onEditSession={handleEditSession} 
           onCancelActiveSession={handleCancelSession}
+          isOnline={isOnline}
+          isSyncing={isSyncing}
         />
       )}
       {activeView === 'Templates' && (
