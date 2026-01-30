@@ -91,19 +91,17 @@
         }
       };
 
-      // Service Worker registration with origin safety
-      if ('serviceWorker' in navigator) {
+      // Improved Service Worker registration for sandbox/blob safety
+      if ('serviceWorker' in navigator && !window.location.href.startsWith('blob:')) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('./sw.js')
             .then(reg => console.log('SW Registered'))
             .catch(err => {
-              if (err.name === 'SecurityError') {
-                console.warn('ServiceWorker registration skipped due to cross-origin restriction (expected in some sandboxes).');
-              } else {
-                console.warn('ServiceWorker registration failed: ', err);
-              }
+              console.warn('ServiceWorker registration failed: ', err);
             });
         });
+      } else {
+        console.info('ServiceWorker skipped: running in blob/sandbox environment.');
       }
     </script>
     
