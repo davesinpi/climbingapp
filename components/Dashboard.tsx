@@ -9,9 +9,11 @@ interface DashboardProps {
   onEditSession: (session: Session) => void;
   activeSession: Session | null;
   onCancelActiveSession: () => void;
+  isOnline: boolean;
+  isSyncing: boolean;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onCancelActiveSession }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onCancelActiveSession, isOnline, isSyncing }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [aiAnalysis, setAiAnalysis] = useState<string>('Loading AI insights...');
@@ -20,7 +22,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onC
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // Small delay ensures the layout engine has finished initial passes
     const timer = setTimeout(() => setIsMounted(true), 50);
     
     const s = StorageService.getSessions().filter(sess => sess.isCompleted);
@@ -45,6 +46,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onC
   }, []);
 
   const handleRefreshAI = async (currentSessions?: Session[]) => {
+    if (!isOnline) {
+      setAiAnalysis("Coaching insights are only available online.");
+      return;
+    }
+
     const targetSessions = currentSessions || sessions;
     if (targetSessions.length === 0) return;
     
@@ -90,11 +96,33 @@ const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onC
     ];
   };
 
+  const pendingCount = StorageService.getSyncQueueLength();
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <header>
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Climbing Performance</h1>
-        <p className="text-slate-500 dark:text-slate-400">Track your progress and send your projects.</p>
+      <header className="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none mb-1">Climbing Performance</h1>
+          <p className="text-slate-500 dark:text-slate-400">Your systematic journey to the top.</p>
+        </div>
+        
+        <div className="flex flex-col items-end gap-2">
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${
+            !isOnline 
+              ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' 
+              : 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-800'
+          }`}>
+             <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`}></span>
+             <span className={`text-[10px] font-black uppercase tracking-widest ${isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600'}`}>
+                {isOnline ? (isSyncing ? 'Syncing...' : 'Cloud Connected') : 'Offline Mode'}
+             </span>
+          </div>
+          {!isOnline && pendingCount > 0 && (
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight italic">
+              {pendingCount} changes saved locally
+            </p>
+          )}
+        </div>
       </header>
 
       {activeSession && (
@@ -194,9 +222,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onC
             </div>
             <button 
               onClick={() => handleRefreshAI()} 
-              disabled={isAnalyzing || sessions.length === 0}
-              className={`p-2 rounded-lg transition-all hover:bg-white/10 active:scale-90 disabled:opacity-50 disabled:pointer-events-none group`}
-              title="Refresh AI Insights"
+              disabled={isAnalyzing || sessions.length === 0 || !isOnline}
+              className={`p-2 rounded-lg transition-all hover:bg-white/10 active:scale-90 disabled:opacity-30 disabled:pointer-events-none group`}
+              title={isOnline ? "Refresh AI Insights" : "Connect to internet for coaching"}
             >
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -217,39 +245,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onEditSession, activeSession, onC
           <div className="mt-6 flex justify-end">
             <span className="text-xs font-bold text-indigo-400 dark:text-indigo-500 uppercase tracking-widest">Powered by Gemini 3</span>
           </div>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold mb-4 dark:text-slate-100">Recent Sessions</h3>
-        <div className="space-y-4">
-          {sessions.slice(-3).reverse().map(s => (
-            <div 
-              key={s.id} 
-              onClick={() => onEditSession(s)}
-              className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700 group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold group-hover:scale-110 transition-transform">
-                  {new Date(s.date).getDate()}
-                </div>
-                <div>
-                  <p className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{s.name}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{new Date(s.date).toDateString()}</p>
-                </div>
-              </div>
-              <div className="text-right flex items-center gap-4">
-                <div>
-                  <p className="font-semibold text-indigo-600 dark:text-indigo-400">{s.exercises.length} Exercises</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 uppercase font-bold">{s.exercises.reduce((acc, e) => acc + e.sets.length, 0)} Total Sets</p>
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-300 dark:text-slate-700 group-hover:text-indigo-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-          ))}
-          {sessions.length === 0 && <p className="text-slate-400 dark:text-slate-500 text-center py-8">No sessions logged yet.</p>}
         </div>
       </div>
     </div>
